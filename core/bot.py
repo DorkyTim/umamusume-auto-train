@@ -1,5 +1,6 @@
 # core/bot.py
 import core.config as config
+from utils.discord_helper import EmbeddedDiscordService
 from core.ocr import OCR
 from core.recognizer import Recognizer
 from core.state.state_analyzer import StateAnalyzer
@@ -7,7 +8,7 @@ from core.state.state_bot import BotState
 from utils.adb_helper import ADB
 from utils.log import debug, error, info, warning
 from utils.helper import sleep
-from utils.assets_repository import get_icon
+from utils.assets_repository import get_icon, get_button
 from core.actions.base import Interaction, Input, Navigation
 from core.actions import (
     InfirmaryManager,
@@ -21,6 +22,7 @@ from core.actions import (
 class Bot:
     templates = {
         "tazuna": "assets/ui/tazuna_hint.png",
+        "credit": "assets/ui/credit.png",
         "retry": "assets/buttons/retry_btn.png",
         "event": "assets/icons/event_choice_1.png",
         "inspiration": "assets/buttons/inspiration_btn2.png",
@@ -28,11 +30,18 @@ class Bot:
         "next": "assets/buttons/next_btn.png",
         "next2": "assets/buttons/next2_btn.png",
         "infirmary": "assets/buttons/infirmary_btn.png",
+        "exchange": "assets/buttons/exchange_btn.png",
+        "try_again": "assets/buttons/try_again_btn.png",
+        "view_results": "assets/buttons/view_results.png",
+        "complete_career": "assets/buttons/complete_career_btn.png",
+        "crane": "assets/buttons/crane_btn.png",
     }
 
-    def __init__(self, adb: ADB = None):
+    def __init__(self, adb: ADB = None, discord_service: EmbeddedDiscordService = None):
         self.is_running = False
         self.adb = adb
+        # Discord service should be injected by caller (e.g., main.py)
+        self.discord = discord_service
 
         # Initialize components
         self.ocr = OCR()
@@ -49,6 +58,8 @@ class Bot:
 
         self.preferred_position_set = False
         self.training = None
+        self.clock = False
+        self.crane_game = False
 
     def start(self):
         self.is_running = True
@@ -67,7 +78,7 @@ class Bot:
 
             # 2. Handle UI elements
             matches = self.recognizer.multi_match_templates(self.templates, screen)
-
+            
             if self.event.select_event(screen):
                 continue
             if self.interaction.click_boxes(
@@ -76,10 +87,18 @@ class Bot:
                 continue
             if matches["cancel"]:
                 if self.recognizer.locate_on_screen(get_icon("clock_icon")):
-                    debug("Lost race, wait for input")
-                    continue
+                    # debug("Lost race, wait for input")
+                    if not self.clock:
+                        self.clock = True
+                        info("Lost Race! Please check!")
+                        self.discord.notify("Lost Race! Pease check!")
+                        
+                    self.interaction.click_boxes(matches["exchange"], clicks=3, text="exchange")
+                    self.interaction.click_boxes(matches["try_again"], clicks=3, text="try_again")
+                    continue 
                 else:
                     self.interaction.click_boxes(matches["cancel"], text="cancel.")
+                    self.clock = False
                     continue
             if self.interaction.click_boxes(matches["next"], text="next."):
                 continue
@@ -87,7 +106,33 @@ class Bot:
                 continue
             if self.interaction.click_boxes(matches["retry"], text="retry"):
                 continue
-
+            if self.interaction.click_boxes(matches["view_results"], text="view_results"):
+                sleep(0.5)
+                # Click center multiple times to skip animations
+                for i in range(2):
+                    self.interaction.click_coordinates(400, 540, clicks=3)
+                    sleep(0.5)
+            
+            if matches["credit"]:
+                if not self.crane_game:
+                    self.crane_game = True
+                    info("crane game detected")
+                    self.discord.notify("Crane game detected, skipping.")
+                    
+                self.interaction.click_boxes(
+                    matches["crane"], clicks=3, text="crane"
+                )
+                continue
+            else:
+                self.crane_game = False
+            
+            #handle career complete
+            if matches["complete_career"]:
+                info("Career complete detected, stopping bot.")
+                self.discord.notify("Career complete detected, stopping bot.")
+                self.stop()
+                continue
+            
             if not matches["tazuna"]:
                 print(".", end="")
                 continue

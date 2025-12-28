@@ -12,13 +12,14 @@ import core.config as config
 
 # from core.bot import Bot
 from core.bot import Bot
+from utils.discord_helper import EmbeddedDiscordService
 
 from update_config import update_config
 from server.main import app
 
 hotkey = "f1"
 adb = ADB()
-bot = Bot(adb)
+bot = None
 
 
 def main():
@@ -27,6 +28,23 @@ def main():
         config.reload_config()
 
         info(f"Config: {config.CONFIG_NAME}")
+        # Initialize and start embedded Discord service if credentials present
+        discord_service = None
+        if config.DISCORD_BOT_TOKEN and config.DISCORD_CHANNEL_ID:
+            try:
+                discord_service = EmbeddedDiscordService(
+                    token=config.DISCORD_BOT_TOKEN,
+                    channel_id=config.DISCORD_CHANNEL_ID,
+                    user_id=config.DISCORD_USER_ID,
+                )
+                discord_service.start()
+                info("Discord service started.")
+            except Exception as e:
+                error(f"Failed to start Discord service: {e}")
+
+        # Create bot with injected discord service
+        global bot
+        bot = Bot(adb, discord_service=discord_service)
         bot.start()
         threading.Thread(target=bot.run, daemon=True).start()
     except Exception as e:
@@ -37,7 +55,7 @@ def main():
 def hotkey_listener():
     while True:
         keyboard.wait(hotkey)
-        if bot.is_running:
+        if bot and bot.is_running:
             bot.stop()
         else:
             main()

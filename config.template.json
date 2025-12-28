@@ -91,5 +91,10 @@
       }
     ]
   },
+  "discord": {
+    "bot_token": null,
+    "channel_id": null,
+    "user_id": null
+  },
   "window_name": "LDPlayer"
 }
