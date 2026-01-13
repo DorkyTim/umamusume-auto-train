@@ -1,6 +1,7 @@
 *venv*
 __pycache__
 config.json
+/web/dist/
 debug
 *test*
 
