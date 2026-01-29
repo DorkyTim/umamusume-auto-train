@@ -1,8 +1,9 @@
 *venv*
 __pycache__
 config.json
+*.bak
 /web/dist/
-debug
+debug*
 *test*
 
 # Logs

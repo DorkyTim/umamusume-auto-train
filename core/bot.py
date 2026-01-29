@@ -22,7 +22,7 @@ from core.actions import (
 class Bot:
     templates = {
         "tazuna": "assets/ui/tazuna_hint.png",
-        "credit": "assets/ui/credit.png",
+        "ok_btn": "assets/buttons/ok_btn.png",
         "retry": "assets/buttons/retry_btn.png",
         "event": "assets/icons/event_choice_1.png",
         "inspiration": "assets/buttons/inspiration_btn2.png",
@@ -59,7 +59,7 @@ class Bot:
         self.preferred_position_set = False
         self.training = None
         self.clock = False
-        self.crane_game = False
+        self.crane_game = 0
 
     def start(self):
         self.is_running = True
@@ -86,6 +86,7 @@ class Bot:
             ):
                 continue
             if matches["cancel"]:
+                debug("Cancel button detected.")
                 if self.recognizer.locate_on_screen(get_icon("clock_icon")):
                     # debug("Lost race, wait for input")
                     if not self.clock:
@@ -113,19 +114,6 @@ class Bot:
                     self.interaction.click_coordinates(400, 540, clicks=3)
                     sleep(0.5)
             
-            if matches["credit"]:
-                if not self.crane_game:
-                    self.crane_game = True
-                    info("crane game detected")
-                    self.discord.notify("Crane game detected, skipping.")
-                    
-                self.interaction.click_boxes(
-                    matches["crane"], clicks=3, text="crane"
-                )
-                continue
-            else:
-                self.crane_game = False
-            
             #handle career complete
             if matches["complete_career"]:
                 info("Career complete detected, stopping bot.")
@@ -134,8 +122,28 @@ class Bot:
                 continue
             
             if not matches["tazuna"]:
-                print(".", end="")
+                debug("Tazuna hint not found, waiting...")
+                # #handle ok button
+                # if self.recognizer.locate_on_screen(get_button("ok_btn")):
+                #     debug("OK button detected, clicking.")
+                #     self.interaction.click_boxes(matches["ok_btn"], text="ok_btn")
+                #     continue
+                #handle crane game
+                if matches["crane"]:
+                    debug("Crane screen detected, skipping.")
+                    if self.crane_game == 0:
+                        self.crane_game = 3
+                        info("crane game detected")
+                        self.discord.notify("Crane game detected, skipping.")
+                    else:
+                        debug(f"Crane game skip remaining: {self.crane_game}")
+                        self.crane_game -= 1
+                        self.interaction.click_boxes(
+                            matches["crane"], clicks=20, text="crane"
+                        )
                 continue
+            else:
+                self.crane_game = 0
 
             # 3. analyze state
             state = self.state_analyzer.analyze_current_state(screen)

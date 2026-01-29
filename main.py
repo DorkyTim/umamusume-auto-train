@@ -31,6 +31,11 @@ def main():
         # Initialize and start embedded Discord service if credentials present
         discord_service = None
         if config.DISCORD_BOT_TOKEN and config.DISCORD_CHANNEL_ID:
+            info(
+                "Starting Discord service: channel_id=%s (type=%s)",
+                config.DISCORD_CHANNEL_ID,
+                type(config.DISCORD_CHANNEL_ID).__name__,
+            )
             try:
                 discord_service = EmbeddedDiscordService(
                     token=config.DISCORD_BOT_TOKEN,

@@ -138,8 +138,6 @@ class Recognizer:
             if screen is None or screen.size == 0:
                 raise ValueError("No screen value provided")
 
-            screen_bgr = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
-
             # Load template
             template = cv2.imread(template_path, cv2.IMREAD_COLOR)
             if template is None:
@@ -148,7 +146,8 @@ class Recognizer:
                 template = cv2.cvtColor(template, cv2.COLOR_BGRA2BGR)
 
             h, w = template.shape[:2]
-            screen_gray = cv2.cvtColor(screen, cv2.COLOR_RGB2GRAY)
+            screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
+            
             template_gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
             result = cv2.matchTemplate(screen_gray, template_gray, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, max_loc = cv2.minMaxLoc(result)
@@ -185,7 +184,7 @@ class Recognizer:
             error("is_btn_active: Cropped region is empty")
             return False
 
-        grayscale = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         avg_brightness = np.mean(grayscale)
 
         debug(f"Button brightness: {avg_brightness:.2f}, threshold: {threshold}")

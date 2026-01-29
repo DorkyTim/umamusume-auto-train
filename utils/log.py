@@ -13,7 +13,7 @@ from logging.handlers import RotatingFileHandler
 #   logging.INFO     → normal operational logs
 #   logging.DEBUG    → very verbose (development / troubleshooting)
 # ============================================================
-LOG_LEVEL = logging.INFO   # ← CHANGE THIS WHEN YOU WANT MORE LOGS
+LOG_LEVEL = logging.DEBUG   # ← CHANGE THIS WHEN YOU WANT MORE LOGS
 
 # -------------------------
 # Root logger configuration

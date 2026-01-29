@@ -76,6 +76,13 @@ class EmbeddedDiscordService:
         self.default_name = default_name
         self.start_timeout = start_timeout
 
+        log.info(
+            "EmbeddedDiscordService initialized with channel_id=%s (type=%s), user_id=%s",
+            self.channel_id,
+            type(self.channel_id).__name__,
+            self.user_id,
+        )
+
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._client: Optional[discord.Client] = None
@@ -225,9 +232,29 @@ class EmbeddedDiscordService:
     ) -> None:
         assert self._client is not None
 
-        channel = self._client.get_channel(self.channel_id)
+        try:
+            channel = self._client.get_channel(self.channel_id)
+            if channel is None:
+                channel = await self._client.fetch_channel(self.channel_id)
+        except discord.NotFound:
+            log.error(
+                "Discord channel %s not found (404). Check DISCORD_CHANNEL_ID and bot membership/access.",
+                self.channel_id,
+            )
+            return
+        except discord.Forbidden:
+            log.error(
+                "Discord bot forbidden from accessing channel %s (403). Check bot permissions and channel visibility.",
+                self.channel_id,
+            )
+            return
+        except Exception:
+            log.exception("Unexpected error while fetching Discord channel %s", self.channel_id)
+            return
+
         if channel is None:
-            channel = await self._client.fetch_channel(self.channel_id)
+            log.error("Discord channel %s could not be resolved; skipping message.", self.channel_id)
+            return
 
         mention = f"<@{self.user_id}> " if self.user_id else ""
         name_prefix = f"**{username}:** " if username and content else ""
