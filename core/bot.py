@@ -124,10 +124,10 @@ class Bot:
             if not matches["tazuna"]:
                 debug("Tazuna hint not found, waiting...")
                 # #handle ok button
-                # if self.recognizer.locate_on_screen(get_button("ok_btn")):
-                #     debug("OK button detected, clicking.")
-                #     self.interaction.click_boxes(matches["ok_btn"], text="ok_btn")
-                #     continue
+                if matches["ok_btn"]:
+                    debug("OK button detected, clicking.")
+                    self.interaction.click_boxes(matches["ok_btn"], text="ok_btn")
+                    continue
                 #handle crane game
                 if matches["crane"]:
                     debug("Crane screen detected, skipping.")
@@ -139,7 +139,7 @@ class Bot:
                         debug(f"Crane game skip remaining: {self.crane_game}")
                         self.crane_game -= 1
                         self.interaction.click_boxes(
-                            matches["crane"], clicks=20, text="crane"
+                            matches["crane"], clicks=4, text="crane"
                         )
                 continue
             else:
